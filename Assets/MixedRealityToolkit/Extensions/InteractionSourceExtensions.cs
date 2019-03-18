@@ -133,6 +133,19 @@ namespace Microsoft.MixedReality.Toolkit.Core.Extensions
             return returnValue;
         }
 #endif // !UNITY_EDITOR
+
+        public static Definitions.Utilities.Handedness MixedRealityHandedness(this InteractionSource interactionSource)
+        {
+            switch (interactionSource.handedness)
+            {
+                case InteractionSourceHandedness.Left:
+                    return Definitions.Utilities.Handedness.Left;
+                case InteractionSourceHandedness.Right:
+                    return Definitions.Utilities.Handedness.Right;
+                default:
+                    return Definitions.Utilities.Handedness.None;
+            }
+        }
 #endif // UNITY_WSA
     }
 }
