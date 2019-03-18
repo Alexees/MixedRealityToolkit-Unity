@@ -4,6 +4,8 @@
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Devices;
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
+using System;
+using System.Collections.Generic;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Interfaces.Devices
 {
@@ -63,6 +65,6 @@ namespace Microsoft.MixedReality.Toolkit.Core.Interfaces.Devices
         /// <summary>
         /// Mapping definition for this controller, linking the Physical inputs to logical Input System Actions
         /// </summary>
-        MixedRealityInteractionMapping[] Interactions { get; }
+        Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> Interactions { get; }
     }
 }
