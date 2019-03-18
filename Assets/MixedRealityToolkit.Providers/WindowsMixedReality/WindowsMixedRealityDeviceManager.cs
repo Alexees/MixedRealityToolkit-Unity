@@ -270,9 +270,9 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             InteractionManager.InteractionSourceDetected += InteractionManager_InteractionSourceDetected;
             InteractionManager.InteractionSourceLost += InteractionManager_InteractionSourceLost;
 
-            var currentReading = InteractionManager.GetCurrentReading();
+            interactionmanagerStates = InteractionManager.GetCurrentReading();
 
-            foreach(var reading in currentReading)
+            foreach(var reading in interactionmanagerStates)
             {
                 InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs(reading));
             }
@@ -285,7 +285,11 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         public override void PreServiceUpdate()
         {
-            UpdateControllers((controller, sourceState) => controller.UpdateTransform());
+            UpdateControllers((controller, sourceState) =>
+            {
+                controller.UpdateControllerData(sourceState);
+                controller.UpdateTransform();
+            });
         }
 
         /// <inheritdoc/>
