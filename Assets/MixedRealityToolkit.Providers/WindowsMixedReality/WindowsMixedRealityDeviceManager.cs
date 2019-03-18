@@ -270,7 +270,12 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             InteractionManager.InteractionSourceDetected += InteractionManager_InteractionSourceDetected;
             InteractionManager.InteractionSourceLost += InteractionManager_InteractionSourceLost;
 
-            InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs());
+            var currentReading = InteractionManager.GetCurrentReading();
+
+            foreach(var reading in currentReading)
+            {
+                InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs(reading));
+            }
 
             GestureRecognizerEnabled =
                 activeProfile.IsInputSystemEnabled &&
@@ -459,7 +464,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 {
                     MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
                 }
-            }, true, true);
+            }, false, true);
         }
 
         /// <summary>
