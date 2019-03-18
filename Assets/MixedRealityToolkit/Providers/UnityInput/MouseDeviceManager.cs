@@ -99,7 +99,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             if (Input.mousePresent && Controller == null) { Enable(); }
 
-            Controller?.Update();
+            Controller?.UpdateController();
         }
 
         /// <inheritdoc />

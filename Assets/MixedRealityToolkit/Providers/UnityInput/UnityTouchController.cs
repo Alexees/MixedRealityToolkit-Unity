@@ -67,12 +67,15 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         public override void SetupDefaultInteractions(Handedness controllerHandedness)
         {
             AssignControllerMappings(DefaultInteractions);
-            if (MixedRealityToolkit.Instance.ActiveProfile.IsInputSystemEnabled &&
-                MixedRealityToolkit.Instance.ActiveProfile.InputSystemProfile.GesturesProfile != null)
+
+            var activeProfiles = MixedRealityToolkit.Instance.ActiveProfile;
+
+            if (activeProfiles.IsInputSystemEnabled &&
+                activeProfiles.InputSystemProfile.GesturesProfile != null)
             {
-                for (int i = 0; i < MixedRealityToolkit.Instance.ActiveProfile.InputSystemProfile.GesturesProfile.Gestures.Length; i++)
+                for (int i = 0; i < activeProfiles.InputSystemProfile.GesturesProfile.Gestures.Length; i++)
                 {
-                    var gesture = MixedRealityToolkit.Instance.ActiveProfile.InputSystemProfile.GesturesProfile.Gestures[i];
+                    var gesture = activeProfiles.InputSystemProfile.GesturesProfile.Gestures[i];
 
                     switch (gesture.GestureType)
                     {
@@ -87,6 +90,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             }
         }
 
+        public void UpdateControllerData(Touch touch, Ray ray)
+        {
+            TouchData = touch;
+            var pointer = (IMixedRealityTouchPointer)InputSource.Pointers[0];
+            ScreenPointRay = pointer.TouchRay = ray;
+        }
+
         /// <summary>
         /// Start the touch.
         /// </summary>
@@ -98,51 +108,57 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             isHolding = true;
         }
 
-        /// <summary>
-        /// Update the touch data.
-        /// </summary>
-        public void Update()
+        public void UpdateTransform()
         {
             if (!isTouched) { return; }
 
             Lifetime += Time.deltaTime;
 
-            if (TouchData.phase == TouchPhase.Moved)
+            if (TouchData.phase != TouchPhase.Moved) { return; }
+
+            Interactions[0].Vector2Data = TouchData.deltaPosition;
+
+            if (Interactions[0].Changed)
             {
-                Interactions[0].Vector2Data = TouchData.deltaPosition;
+                MixedRealityToolkit.InputSystem?.RaisePositionInputChanged(InputSource, Interactions[0].MixedRealityInputAction, TouchData.deltaPosition);
+            }
 
-                if (Interactions[0].Changed)
+            lastPose.Position = InputSource.Pointers[0].BaseCursor.Position;
+            lastPose.Rotation = InputSource.Pointers[0].BaseCursor.Rotation;
+            MixedRealityToolkit.InputSystem?.RaiseSourcePoseChanged(InputSource, this, lastPose);
+
+            Interactions[1].PoseData = lastPose;
+
+            if (Interactions[1].Changed)
+            {
+                MixedRealityToolkit.InputSystem?.RaisePoseInputChanged(InputSource, Interactions[1].MixedRealityInputAction, lastPose);
+            }
+        }
+
+        /// <summary>
+        /// Update the touch data.
+        /// </summary>
+        public void UpdateController()
+        {
+            if (!isTouched) { return; }
+
+            if (TouchData.phase != TouchPhase.Moved) { return; }
+
+            if (!isManipulating)
+            {
+                if (Mathf.Abs(TouchData.deltaPosition.x) > ManipulationThreshold ||
+                    Mathf.Abs(TouchData.deltaPosition.y) > ManipulationThreshold)
                 {
-                    MixedRealityToolkit.InputSystem?.RaisePositionInputChanged(InputSource, Interactions[0].MixedRealityInputAction, TouchData.deltaPosition);
+                    MixedRealityToolkit.InputSystem?.RaiseGestureCanceled(this, holdingAction);
+                    isHolding = false;
+
+                    MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, manipulationAction);
+                    isManipulating = true;
                 }
-
-                lastPose.Position = InputSource.Pointers[0].BaseCursor.Position;
-                lastPose.Rotation = InputSource.Pointers[0].BaseCursor.Rotation;
-                MixedRealityToolkit.InputSystem?.RaiseSourcePoseChanged(InputSource, this, lastPose);
-
-                Interactions[1].PoseData = lastPose;
-
-                if (Interactions[1].Changed)
-                {
-                    MixedRealityToolkit.InputSystem?.RaisePoseInputChanged(InputSource, Interactions[1].MixedRealityInputAction, lastPose);
-                }
-
-                if (!isManipulating)
-                {
-                    if (Mathf.Abs(TouchData.deltaPosition.x) > ManipulationThreshold ||
-                        Mathf.Abs(TouchData.deltaPosition.y) > ManipulationThreshold)
-                    {
-                        MixedRealityToolkit.InputSystem?.RaiseGestureCanceled(this, holdingAction);
-                        isHolding = false;
-
-                        MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, manipulationAction);
-                        isManipulating = true;
-                    }
-                }
-                else
-                {
-                    MixedRealityToolkit.InputSystem?.RaiseGestureUpdated(this, manipulationAction, TouchData.deltaPosition);
-                }
+            }
+            else
+            {
+                MixedRealityToolkit.InputSystem?.RaiseGestureUpdated(this, manipulationAction, TouchData.deltaPosition);
             }
         }
 

@@ -39,7 +39,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             // Generic unity controller's will not have default interactions
         }
 
-        public virtual void UpdateControllerTransform()
+        public virtual void UpdateTransform()
         {
             if (!Enabled) { return; }
 

@@ -270,15 +270,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             InteractionManager.InteractionSourceDetected += InteractionManager_InteractionSourceDetected;
             InteractionManager.InteractionSourceLost += InteractionManager_InteractionSourceLost;
 
-            UpdateControllers((controller, sourceState) =>
-            {
-                controller.UpdateControllerTransform(sourceState);
-                controller.UpdateController(sourceState);
-
-                // SourceDetected gets raised when a new controller is detected and, if previously present, 
-                // when OnEnable is called. Do not create a new controller here.
-                MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
-            });
+            InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs());
 
             GestureRecognizerEnabled =
                 activeProfile.IsInputSystemEnabled &&
@@ -288,7 +280,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         public override void PreServiceUpdate()
         {
-            UpdateControllers((controller, sourceState) => controller.UpdateControllerTransform(sourceState));
+            UpdateControllers((controller, sourceState) => controller.UpdateTransform());
         }
 
         /// <inheritdoc/>
@@ -296,12 +288,12 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         {
             base.Update();
 
-            UpdateControllers((controller, sourceState) => controller.UpdateController(sourceState), false);
+            UpdateControllers((controller, sourceState) => controller.UpdateController(), false);
 
             LastInteractionManagerStateReading = interactionmanagerStates;
         }
 
-        private void UpdateControllers(Action<WindowsMixedRealityController, InteractionSourceState> controllerAction, bool updateCurrentReading = true)
+        private void UpdateControllers(Action<WindowsMixedRealityController, InteractionSourceState> controllerAction, bool updateCurrentReading = true, bool addController = false)
         {
             if (updateCurrentReading)
             {
@@ -310,7 +302,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
             for (var i = 0; i < interactionmanagerStates?.Length; i++)
             {
-                var controller = GetController(interactionmanagerStates[i].source, false);
+                var controller = GetController(interactionmanagerStates[i].source, addController);
 
                 if (controller != null)
                 {
@@ -385,12 +377,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             InteractionManager.InteractionSourceDetected -= InteractionManager_InteractionSourceDetected;
             InteractionManager.InteractionSourceLost -= InteractionManager_InteractionSourceLost;
 
-            InteractionSourceState[] states = InteractionManager.GetCurrentReading();
-
-            for (var i = 0; i < states.Length; i++)
-            {
-                RemoveController(states[i].source);
-            }
+            UpdateControllers((controller, sourceState) => RemoveController(controller, sourceState.source), false);
         }
 
         #endregion IMixedRealityDeviceManager Interface
@@ -438,23 +425,17 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             return detectedController;
         }
 
+        #endregion Controller Utilities
+
         /// <summary>
         /// Remove the selected controller from the Active Store
         /// </summary>
         /// <param name="interactionSourceState">Source State provided by the SDK to remove</param>
-        private void RemoveController(InteractionSource interactionSource)
+        private void RemoveController(WindowsMixedRealityController controller, InteractionSource interactionSource)
         {
-            var controller = GetController(interactionSource, false);
-
-            if (controller != null)
-            {
-                MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller);
-            }
-
+            MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller);
             activeControllers.Remove(interactionSource.id);
         }
-
-        #endregion Controller Utilities
 
         #region Unity InteractionManager Events
 
@@ -466,14 +447,19 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         {
             bool raiseSourceDetected = !activeControllers.ContainsKey(args.state.source.id);
 
-            var controller = GetController(args.state.source);
-
-            if (controller != null && raiseSourceDetected)
+            UpdateControllers((controller, sourceState) =>
             {
-                MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
-            }
+                controller.UpdateControllerData(sourceState);
+                controller.UpdateTransform();
+                controller.UpdateController();
 
-            controller?.UpdateController(args.state);
+                // SourceDetected gets raised when a new controller is detected and, if previously present, 
+                // when OnEnable is called. Do not create a new controller here.
+                if (raiseSourceDetected)
+                {
+                    MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
+                }
+            }, true, true);
         }
 
         /// <summary>
@@ -482,7 +468,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// <param name="args">SDK source updated event arguments</param>
         private void InteractionManager_InteractionSourceLost(InteractionSourceLostEventArgs args)
         {
-            RemoveController(args.state.source);
+            RaiseInputSystemEvent(args.state.source, controller => RemoveController(controller, args.state.source));
         }
 
         #endregion Unity InteractionManager Events

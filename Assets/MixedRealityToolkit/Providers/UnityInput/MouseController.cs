@@ -91,7 +91,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// <summary>
         /// Update controller.
         /// </summary>
-        public void Update()
+        public void UpdateController()
         {
             if (!IsMousePresentAndVisible)
             {

@@ -40,41 +40,38 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         public override void PreServiceUpdate()
         {
-            deviceRefreshTimer += Time.unscaledDeltaTime;
-
-            if (deviceRefreshTimer >= DeviceRefreshInterval)
+            if (Time.unscaledDeltaTime >= deviceRefreshTimer + DeviceRefreshInterval)
             {
-                deviceRefreshTimer = 0.0f;
+                deviceRefreshTimer = Time.unscaledDeltaTime;
                 RefreshDevices();
             }
 
-            foreach (var controller in ActiveControllers)
-            {
-                controller.Value?.UpdateControllerTransform();
-            }
+            UpdateControllers(controller => controller.UpdateTransform());
         }
 
         /// <inheritdoc />
         public override void Update()
         {
-            foreach (var controller in ActiveControllers)
-            {
-                controller.Value?.UpdateController();
-            }
+            UpdateControllers(controller => controller.UpdateController());
         }
 
         /// <inheritdoc />
         public override void Disable()
         {
-            foreach (var genericJoystick in ActiveControllers)
-            {
-                if (genericJoystick.Value != null)
-                {
-                    MixedRealityToolkit.InputSystem?.RaiseSourceLost(genericJoystick.Value.InputSource, genericJoystick.Value);
-                }
-            }
+            UpdateControllers(controller => MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller));
 
             ActiveControllers.Clear();
+        }
+
+        private void UpdateControllers(Action<GenericJoystickController> controllerAction)
+        {
+            foreach (var controller in ActiveControllers)
+            {
+                if (controller.Value != null)
+                {
+                    controllerAction(controller.Value);
+                }
+            }
         }
 
         /// <inheritdoc/>
