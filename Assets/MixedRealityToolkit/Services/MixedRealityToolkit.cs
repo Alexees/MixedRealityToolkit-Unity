@@ -961,11 +961,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Services
             // Update all registered runtime services before the core services
             foreach (var service in registeredMixedRealityServices)
             {
-                var extensionService = service.Item2 as IMixedRealityDeviceManager;
-                if (extensionService != null)
-                {
-                    extensionService.PreServiceUpdate();
-                }
+                (service.Item2 as IMixedRealityDeviceManager)?.PreServiceUpdate();
             }
 
             // Update all systems
