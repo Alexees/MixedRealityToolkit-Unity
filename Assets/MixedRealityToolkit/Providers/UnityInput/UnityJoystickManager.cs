@@ -40,19 +40,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         public override void PreServiceUpdate()
         {
-            if (Time.unscaledDeltaTime >= deviceRefreshTimer + DeviceRefreshInterval)
-            {
-                deviceRefreshTimer = Time.unscaledDeltaTime;
-                RefreshDevices();
-            }
-
             UpdateControllers(controller => controller.UpdateControllerTransform());
         }
 
         /// <inheritdoc />
         public override void Update()
         {
-            UpdateControllers(controller => controller.UpdateControllerInteractions());
+            UpdateControllers(controller => controller.UpdateControllerInteractions(), false);
         }
 
         /// <inheritdoc />
@@ -63,13 +57,19 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             ActiveControllers.Clear();
         }
 
-        private void UpdateControllers(Action<GenericJoystickController> controllerAction)
+        private void UpdateControllers(Action<GenericJoystickController> controllerAction, bool updateCurrentReading = true)
         {
+            if (updateCurrentReading && Time.unscaledDeltaTime >= deviceRefreshTimer + DeviceRefreshInterval)
+            {
+                deviceRefreshTimer = Time.unscaledDeltaTime;
+                RefreshDevices();
+            }
+
             foreach (var controller in ActiveControllers)
             {
                 if (controller.Value != null)
                 {
-                    controllerAction(controller.Value);
+                    controllerAction?.Invoke(controller.Value);
                 }
             }
         }

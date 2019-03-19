@@ -37,7 +37,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         public override void PreServiceUpdate()
         {
-            UpdateTouchControllers((controller, touch) =>
+            UpdateControllers((controller, touch) =>
             {
                 controller.UpdateControllerData(touch);
                 controller.UpdateControllerTransform();
@@ -47,7 +47,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// <inheritdoc />
         public override void Update()
         {
-            UpdateTouchControllers((controller, touch) =>
+            UpdateControllers((controller, touch) =>
             {
                 controller.UpdateControllerInteractions();
                 if (touch.phase == TouchPhase.Canceled ||
@@ -112,7 +112,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             return controller;
         }
 
-        private void UpdateTouchControllers(Action<UnityTouchController, Touch> controllerAction, bool updateCurrentReading = true)
+        private void UpdateControllers(Action<UnityTouchController, Touch> controllerAction, bool updateCurrentReading = true)
         {
             if (updateCurrentReading)
             {
