@@ -7,6 +7,7 @@ using Microsoft.MixedReality.Toolkit.Core.Definitions.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Services;
+using Microsoft.MixedReality.Toolkit.Core.Utilities;
 using UnityEngine;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
@@ -51,9 +52,8 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             new MixedRealityInteractionMapping(0, "Touch Pointer Delta", AxisType.DualAxis, DeviceInputType.PointerPosition, MixedRealityInputAction.None),
             new MixedRealityInteractionMapping(1, "Touch Pointer Position", AxisType.SixDof, DeviceInputType.SpatialPointer, MixedRealityInputAction.None),
+            new MixedRealityInteractionMapping(2, "Touch Press", AxisType.Digital, DeviceInputType.PointerClick, MixedRealityInputAction.None)
         };
-
-        private MixedRealityInteractionMapping pointerDownInteraction => new MixedRealityInteractionMapping(2, "Touch Press", AxisType.Digital, DeviceInputType.PointerClick, MixedRealityInputAction.None);
 
         private bool isTouched;
         private MixedRealityInputAction holdingAction;
@@ -67,12 +67,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             var activeProfiles = MixedRealityToolkit.Instance.ActiveProfile;
 
-            if (activeProfiles.IsInputSystemEnabled &&
-                activeProfiles.InputSystemProfile.GesturesProfile != null)
+            if (activeProfiles.IsInputSystemEnabled && activeProfiles.InputSystemProfile.GesturesProfile != null)
             {
-                for (int i = 0; i < activeProfiles.InputSystemProfile.GesturesProfile.Gestures.Length; i++)
+                var gestures = activeProfiles.InputSystemProfile.GesturesProfile.Gestures;
+
+                for (int i = 0; i < gestures.Length; i++)
                 {
-                    var gesture = activeProfiles.InputSystemProfile.GesturesProfile.Gestures[i];
+                    var gesture = gestures[i];
 
                     switch (gesture.GestureType)
                     {
@@ -86,14 +87,14 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                 }
             }
 
-            return null;
+            return new[]{ 0, 1 };
         }
 
-        public void UpdateControllerData(Touch touch, Ray ray)
+        public void UpdateControllerData(Touch touch)
         {
             TouchData = touch;
             var pointer = (IMixedRealityTouchPointer)InputSource.Pointers[0];
-            ScreenPointRay = pointer.TouchRay = ray;
+            ScreenPointRay = pointer.TouchRay = CameraCache.Main.ScreenPointToRay(touch.position);
         }
 
         /// <summary>
@@ -101,30 +102,30 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// </summary>
         public void StartTouch()
         {
-            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
             isTouched = true;
             MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, holdingAction);
             isHolding = true;
         }
 
-        public void UpdateTransform()
+        protected override void UpdateController(bool transformUpdate)
         {
             if (!isTouched) { return; }
 
-            Lifetime += Time.deltaTime;
-
-            if (TouchData.phase != TouchPhase.Moved) { return; }
-
-            foreach(var interaction in Interactions)
+            if (transformUpdate)
             {
-                interaction.ControllerAction?.Invoke(interaction);
+                Lifetime += Time.deltaTime;
+            }
+            else
+            {
+                UpdateTouchInput();
             }
         }
 
         /// <summary>
         /// Update the touch data.
         /// </summary>
-        public void UpdateController()
+        private void UpdateTouchInput()
         {
             if (!isTouched) { return; }
 
@@ -183,7 +184,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                         isManipulating = false;
                     }
 
-                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction, TouchData.tapCount);
+                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction, TouchData.tapCount);
                 }
 
                 if (isHolding)
@@ -215,7 +216,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             Debug.Assert(!isManipulating);
 
-            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
 
             Lifetime = 0.0f;
             isTouched = false;

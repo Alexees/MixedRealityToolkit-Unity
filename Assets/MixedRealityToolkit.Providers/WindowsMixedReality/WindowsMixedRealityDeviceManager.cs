@@ -62,7 +62,10 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         #region Gesture Settings
 
-        private static bool gestureRecognizerEnabled;
+        private static bool[] recognizerEnabled = new[] { false, false};
+
+        private const int gestureRecognizerIndex = 0;
+        private const int navigationRecognizerIndex = 1;
 
         /// <summary>
         /// Enables or disables the gesture recognizer.
@@ -72,34 +75,9 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// </remarks>
         public static bool GestureRecognizerEnabled
         {
-            get
-            {
-                return gestureRecognizerEnabled;
-            }
-            set
-            {
-                if (gestureRecognizer == null)
-                {
-                    gestureRecognizerEnabled = false;
-                    return;
-                }
-                gestureRecognizerEnabled = value;
-                if (!Application.isPlaying) { return; }
-
-                if (!gestureRecognizer.IsCapturingGestures() && gestureRecognizerEnabled)
-                {
-                    NavigationRecognizerEnabled = false;
-                    gestureRecognizer.StartCapturingGestures();
-                }
-
-                if (gestureRecognizer.IsCapturingGestures() && !gestureRecognizerEnabled)
-                {
-                    gestureRecognizer.CancelGestures();
-                }
-            }
+            get => recognizerEnabled[gestureRecognizerIndex];
+            set => AssignRecognizer(value, gestureRecognizerIndex);
         }
-
-        private static bool navigationRecognizerEnabled;
 
         /// <summary>
         /// Enables or disables the navigation recognizer.
@@ -109,32 +87,31 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// </remarks>
         public static bool NavigationRecognizerEnabled
         {
-            get
+            get => recognizerEnabled[navigationRecognizerIndex];
+            set => AssignRecognizer(value, navigationRecognizerIndex);
+        }
+
+        private static void AssignRecognizer(bool enableRecognizer, int index)
+        {
+            if (gestureRecognizer[index] == null)
             {
-                return navigationRecognizerEnabled;
+                recognizerEnabled[index] = false;
+                return;
             }
-            set
+
+            recognizerEnabled[index] = enableRecognizer;
+
+            if (!Application.isPlaying) { return; }
+
+            if (!gestureRecognizer[index].IsCapturingGestures() && recognizerEnabled[index])
             {
-                if (navigationGestureRecognizer == null)
-                {
-                    navigationRecognizerEnabled = false;
-                    return;
-                }
+                GestureRecognizerEnabled = false;
+                gestureRecognizer[index].StartCapturingGestures();
+            }
 
-                navigationRecognizerEnabled = value;
-
-                if (!Application.isPlaying) { return; }
-
-                if (!navigationGestureRecognizer.IsCapturingGestures() && navigationRecognizerEnabled)
-                {
-                    GestureRecognizerEnabled = false;
-                    navigationGestureRecognizer.StartCapturingGestures();
-                }
-
-                if (navigationGestureRecognizer.IsCapturingGestures() && !navigationRecognizerEnabled)
-                {
-                    navigationGestureRecognizer.CancelGestures();
-                }
+            if (gestureRecognizer[index].IsCapturingGestures() && !recognizerEnabled[index])
+            {
+                gestureRecognizer[index].CancelGestures();
             }
         }
 
@@ -152,7 +129,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
                 if (Application.isPlaying)
                 {
-                    gestureRecognizer?.UpdateAndResetGestures(WSAGestureSettings);
+                    gestureRecognizer[gestureRecognizerIndex]?.UpdateAndResetGestures(WSAGestureSettings);
                 }
             }
         }
@@ -171,7 +148,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
                 if (Application.isPlaying)
                 {
-                    navigationGestureRecognizer?.UpdateAndResetGestures(WSANavigationSettings);
+                    gestureRecognizer[navigationRecognizerIndex]?.UpdateAndResetGestures(WSANavigationSettings);
                 }
             }
         }
@@ -190,7 +167,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
                 if (Application.isPlaying)
                 {
-                    navigationGestureRecognizer?.UpdateAndResetGestures(WSARailsNavigationSettings);
+                    gestureRecognizer[navigationRecognizerIndex]?.UpdateAndResetGestures(WSARailsNavigationSettings);
                 }
             }
         }
@@ -209,7 +186,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
                 if (Application.isPlaying)
                 {
-                    navigationGestureRecognizer?.UpdateAndResetGestures(useRailsNavigation ? WSANavigationSettings : WSARailsNavigationSettings);
+                    gestureRecognizer[navigationRecognizerIndex]?.UpdateAndResetGestures(useRailsNavigation ? WSANavigationSettings : WSARailsNavigationSettings);
                 }
             }
         }
@@ -218,10 +195,9 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         private MixedRealityInputAction navigationAction = MixedRealityInputAction.None;
         private MixedRealityInputAction manipulationAction = MixedRealityInputAction.None;
 
-        private static GestureRecognizer gestureRecognizer;
+        private static GestureRecognizer[] gestureRecognizer = new GestureRecognizer[2];
         private static WsaGestureSettings WSAGestureSettings => (WsaGestureSettings)gestureSettings;
 
-        private static GestureRecognizer navigationGestureRecognizer;
         private static WsaGestureSettings WSANavigationSettings => (WsaGestureSettings)navigationSettings;
         private static WsaGestureSettings WSARailsNavigationSettings => (WsaGestureSettings)railsNavigationSettings;
 
@@ -299,8 +275,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// <inheritdoc/>
         public override void Update()
         {
-            base.Update();
-
             UpdateControllers((controller, sourceState) => controller.UpdateController(), false);
 
             LastInteractionManagerStateReading = interactionmanagerStates;
@@ -326,66 +300,74 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         private void RegisterGestureEvents()
         {
-            if (gestureRecognizer == null)
+            var recognizer = gestureRecognizer[gestureRecognizerIndex];
+
+            if (recognizer == null)
             {
-                gestureRecognizer = new GestureRecognizer();
+                recognizer = gestureRecognizer[gestureRecognizerIndex] = new GestureRecognizer();
             }
 
-            gestureRecognizer.HoldStarted += GestureRecognizer_HoldStarted;
-            gestureRecognizer.HoldCompleted += GestureRecognizer_HoldCompleted;
-            gestureRecognizer.HoldCanceled += GestureRecognizer_HoldCanceled;
+            recognizer.HoldStarted += GestureRecognizer_HoldStarted;
+            recognizer.HoldCompleted += GestureRecognizer_HoldCompleted;
+            recognizer.HoldCanceled += GestureRecognizer_HoldCanceled;
 
-            gestureRecognizer.ManipulationStarted += GestureRecognizer_ManipulationStarted;
-            gestureRecognizer.ManipulationUpdated += GestureRecognizer_ManipulationUpdated;
-            gestureRecognizer.ManipulationCompleted += GestureRecognizer_ManipulationCompleted;
-            gestureRecognizer.ManipulationCanceled += GestureRecognizer_ManipulationCanceled;
+            recognizer.ManipulationStarted += GestureRecognizer_ManipulationStarted;
+            recognizer.ManipulationUpdated += GestureRecognizer_ManipulationUpdated;
+            recognizer.ManipulationCompleted += GestureRecognizer_ManipulationCompleted;
+            recognizer.ManipulationCanceled += GestureRecognizer_ManipulationCanceled;
         }
 
         private void UnregisterGestureEvents()
         {
-            if (gestureRecognizer == null) { return; }
+            var recognizer = gestureRecognizer[gestureRecognizerIndex];
 
-            gestureRecognizer.HoldStarted -= GestureRecognizer_HoldStarted;
-            gestureRecognizer.HoldCompleted -= GestureRecognizer_HoldCompleted;
-            gestureRecognizer.HoldCanceled -= GestureRecognizer_HoldCanceled;
+            if (recognizer == null) { return; }
 
-            gestureRecognizer.ManipulationStarted -= GestureRecognizer_ManipulationStarted;
-            gestureRecognizer.ManipulationUpdated -= GestureRecognizer_ManipulationUpdated;
-            gestureRecognizer.ManipulationCompleted -= GestureRecognizer_ManipulationCompleted;
-            gestureRecognizer.ManipulationCanceled -= GestureRecognizer_ManipulationCanceled;
+            recognizer.HoldStarted -= GestureRecognizer_HoldStarted;
+            recognizer.HoldCompleted -= GestureRecognizer_HoldCompleted;
+            recognizer.HoldCanceled -= GestureRecognizer_HoldCanceled;
+
+            recognizer.ManipulationStarted -= GestureRecognizer_ManipulationStarted;
+            recognizer.ManipulationUpdated -= GestureRecognizer_ManipulationUpdated;
+            recognizer.ManipulationCompleted -= GestureRecognizer_ManipulationCompleted;
+            recognizer.ManipulationCanceled -= GestureRecognizer_ManipulationCanceled;
         }
 
         private void RegisterNavigationEvents()
         {
-            if (navigationGestureRecognizer == null)
+            var recognizer = gestureRecognizer[navigationRecognizerIndex];
+
+            if (recognizer == null)
             {
-                navigationGestureRecognizer = new GestureRecognizer();
+                recognizer = gestureRecognizer[navigationRecognizerIndex] = new GestureRecognizer();
             }
 
-            navigationGestureRecognizer.NavigationStarted += NavigationGestureRecognizer_NavigationStarted;
-            navigationGestureRecognizer.NavigationUpdated += NavigationGestureRecognizer_NavigationUpdated;
-            navigationGestureRecognizer.NavigationCompleted += NavigationGestureRecognizer_NavigationCompleted;
-            navigationGestureRecognizer.NavigationCanceled += NavigationGestureRecognizer_NavigationCanceled;
+            recognizer.NavigationStarted += NavigationGestureRecognizer_NavigationStarted;
+            recognizer.NavigationUpdated += NavigationGestureRecognizer_NavigationUpdated;
+            recognizer.NavigationCompleted += NavigationGestureRecognizer_NavigationCompleted;
+            recognizer.NavigationCanceled += NavigationGestureRecognizer_NavigationCanceled;
         }
 
         private void UnregisterNavigationEvents()
         {
-            if (navigationGestureRecognizer == null) { return; }
+            var recognizer = gestureRecognizer[navigationRecognizerIndex];
 
-            navigationGestureRecognizer.NavigationStarted -= NavigationGestureRecognizer_NavigationStarted;
-            navigationGestureRecognizer.NavigationUpdated -= NavigationGestureRecognizer_NavigationUpdated;
-            navigationGestureRecognizer.NavigationCompleted -= NavigationGestureRecognizer_NavigationCompleted;
-            navigationGestureRecognizer.NavigationCanceled -= NavigationGestureRecognizer_NavigationCanceled;
+            if (recognizer == null) { return; }
+
+            recognizer.NavigationStarted -= NavigationGestureRecognizer_NavigationStarted;
+            recognizer.NavigationUpdated -= NavigationGestureRecognizer_NavigationUpdated;
+            recognizer.NavigationCompleted -= NavigationGestureRecognizer_NavigationCompleted;
+            recognizer.NavigationCanceled -= NavigationGestureRecognizer_NavigationCanceled;
         }
 
         /// <inheritdoc/>
         public override void Disable()
         {
             UnregisterGestureEvents();
-            gestureRecognizer?.Dispose();
+            gestureRecognizer[navigationRecognizerIndex]?.Dispose();
 
             UnregisterNavigationEvents();
-            navigationGestureRecognizer?.Dispose();
+            gestureRecognizer[navigationRecognizerIndex]?.Dispose();
 
             InteractionManager.InteractionSourceDetected -= InteractionManager_InteractionSourceDetected;
             InteractionManager.InteractionSourceLost -= InteractionManager_InteractionSourceLost;
@@ -425,7 +407,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             if (!detectedController.SetupConfiguration(typeof(WindowsMixedRealityController)))
             {
                 // Controller failed to be setup correctly.
-                // Return null so we don't raise the source detected.
                 return null;
             }
 
@@ -435,6 +416,11 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             }
 
             activeControllers.Add(interactionSource.id, detectedController);
+
+            // SourceDetected gets raised when a new controller is detected and, if previously present, 
+            // when OnEnable is called. Do not create a new controller here.
+            MixedRealityToolkit.InputSystem?.RaiseSourceDetected(detectedController.InputSource, detectedController);
+
             return detectedController;
         }
 
@@ -466,21 +452,11 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 return;
             }
 #endif
-
-            bool raiseSourceDetected = !activeControllers.ContainsKey(args.state.source.id);
-
             UpdateControllers((controller, sourceState) =>
             {
                 controller.UpdateControllerData(sourceState);
                 controller.UpdateTransform();
                 controller.UpdateController();
-
-                // SourceDetected gets raised when a new controller is detected and, if previously present, 
-                // when OnEnable is called. Do not create a new controller here.
-                if (raiseSourceDetected)
-                {
-                    MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
-                }
             }, false, true);
         }
 

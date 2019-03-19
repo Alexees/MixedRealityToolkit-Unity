@@ -211,6 +211,50 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         /// <param name="mapping"></param>
         protected abstract int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings);
 
+        public virtual void UpdateTransform()
+        {
+            UpdateController(true);
+        }
+
+        /// <summary>
+        /// Update the controller data from the provided platform state
+        /// </summary>
+        /// <param name="interactionSourceState">The InteractionSourceState retrieved from the platform</param>
+        public virtual void UpdateController()
+        {
+            UpdateController(false);
+        }
+
+        protected virtual void UpdateController(bool transformUpdate)
+        {
+            if (!Enabled) { return; }
+
+            if (Interactions == null)
+            {
+                Debug.LogError($"No interaction configuration for Windows Mixed Reality Motion Controller {ControllerHandedness}");
+                Enabled = false;
+            }
+
+            MixedRealityInteractionMapping[] interactions;
+            if (transformUpdate)
+            {
+                if (PositionalInteractions == null)
+                {
+                    return;
+                }
+                interactions = PositionalInteractions;
+            }
+            else
+            {
+                interactions = Interactions;
+            }
+
+            foreach (var interaction in interactions)
+            {
+                interaction.ControllerAction?.Invoke(interaction);
+            }
+        }
+
         private void TryRenderControllerModel(Type controllerType)
         {
             var inputSystemProfile = MixedRealityToolkit.Instance.ActiveProfile.InputSystemProfile;

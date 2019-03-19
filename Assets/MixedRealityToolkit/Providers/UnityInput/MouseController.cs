@@ -76,42 +76,14 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             return positionalIndices.ToArray();
         }
 
-        public void UpdateTransform()
+        protected override void UpdateController(bool transformUpdate)
         {
             if (!IsMousePresentAndVisible)
             {
                 return;
             }
 
-            foreach (var interaction in Interactions)
-            {
-                if (interaction.InputType == DeviceInputType.SpatialPointer ||
-                    interaction.InputType == DeviceInputType.PointerPosition)
-                {
-                    interaction.ControllerAction?.Invoke(interaction);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update controller.
-        /// </summary>
-        public void UpdateController()
-        {
-            if (!IsMousePresentAndVisible)
-            {
-                return;
-            }
-
-            foreach (var interaction in Interactions)
-            {
-                if (interaction.InputType != DeviceInputType.SpatialPointer &&
-                    interaction.InputType != DeviceInputType.PointerPosition)
-                {
-                    interaction.ControllerAction?.Invoke(interaction);
-
-                }
-            }
+            base.UpdateController(transformUpdate);
         }
 
         private void UpdateMousePosition(MixedRealityInteractionMapping interaction)

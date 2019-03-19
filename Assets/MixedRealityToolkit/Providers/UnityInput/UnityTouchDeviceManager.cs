@@ -33,28 +33,15 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         private static readonly Dictionary<int, UnityTouchController> ActiveTouches = new Dictionary<int, UnityTouchController>();
 
+        private Touch[] touches;
+
         public override void PreServiceUpdate()
         {
-            for (var i = 0; i < Input.touches.Length; i++)
+            UpdateTouchController((controller, touch) =>
             {
-                Touch touch = Input.touches[i];
-
-                if (touch.phase == TouchPhase.Began ||
-                    touch.phase == TouchPhase.Moved ||
-                    touch.phase == TouchPhase.Stationary)
-                {
-                    if (touch.phase == TouchPhase.Began)
-                    {
-                        AddTouchController(touch);
-                    }
-
-                    UpdateTouchController(touch, controller =>
-                    {
-                        controller.UpdateControllerData(touch, CameraCache.Main.ScreenPointToRay(touch.position));
-                        controller.UpdateTransform();
-                    });
-                }
-            }
+                controller.UpdateControllerData(touch);
+                controller.UpdateTransform();
+            });
         }
 
         /// <inheritdoc />
@@ -67,11 +54,11 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                 switch (touch.phase)
                 {
                     case TouchPhase.Began:
-                        UpdateTouchController(touch, controller => controller.StartTouch());
+                        UpdateTouchController((controller, touch) => controller.StartTouch());
                         break;
                     case TouchPhase.Ended:
                     case TouchPhase.Canceled:
-                        UpdateTouchController(touch, controller => RemoveTouchController(controller));
+                        UpdateTouchController((controller, touch) => RemoveTouchController(controller));
                         break;
                 }
             }
@@ -101,7 +88,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             ActiveTouches.Clear();
         }
 
-        private void AddTouchController(Touch touch)
+        private UnityTouchController GetController(Touch touch, bool addController = true)
         {
             // Construct a ray from the current touch coordinates
             Ray ray = CameraCache.Main.ScreenPointToRay(touch.position);
@@ -131,12 +118,17 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                     }
                 }
 
-                controller.SetupConfiguration(typeof(UnityTouchController));
+                if (!controller.SetupConfiguration(typeof(UnityTouchController)))
+                {
+                    return null;
+                }
+
                 ActiveTouches.Add(touch.fingerId, controller);
+                MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
             }
 
-            MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
-            controller.UpdateControllerData(touch, ray);
+            Debug.Assert(controller != null);
+            return controller;
         }
 
         private void RemoveTouchController(UnityTouchController controller)
@@ -145,16 +137,22 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller);
         }
 
-        private void UpdateTouchController(Touch touch, Action<UnityTouchController> controllerAction)
+        private void UpdateTouchController(Action<UnityTouchController, Touch> controllerAction, bool updateCurrentReading = true)
         {
-            UnityTouchController controller;
-
-            if (!ActiveTouches.TryGetValue(touch.fingerId, out controller))
+            if (updateCurrentReading)
             {
-                return;
+                touches = Input.touches;
             }
 
-            controllerAction?.Invoke(controller);
+            for (var i = 0; i < touches.Length; i++)
+            {
+                var controller = GetController(touches[i]);
+
+                if (controller != null)
+                {
+                    controllerAction?.Invoke(controller, touches[i]);
+                }
+            }
         }
     }
 }

@@ -34,9 +34,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// <param name="inputSource"></param>
         /// <param name="interactions"></param>
         public WindowsMixedRealityController(TrackingState trackingState, Handedness controllerHandedness, IMixedRealityInputSource inputSource = null, MixedRealityInteractionMapping[] interactions = null)
-                : base(trackingState, controllerHandedness, inputSource, interactions)
-        {
-        }
+                : base(trackingState, controllerHandedness, inputSource, interactions) { }
 
         /// <summary>
         /// The Windows Mixed Reality Controller default interactions.
@@ -69,7 +67,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             {
                 switch (mappings[i].InputType)
                 {
-                    case DeviceInputType.None:
                     case DeviceInputType.SpatialPointer:
                         mappings[i].ControllerAction = UpdatePointerData;
                         positionalIndices.Add(i);
@@ -125,39 +122,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         #region Update data functions
 
-        public virtual void UpdateTransform()
-        {
-            UpdateController(true);
-        }
-
-        /// <summary>
-        /// Update the controller data from the provided platform state
-        /// </summary>
-        /// <param name="interactionSourceState">The InteractionSourceState retrieved from the platform</param>
-        public virtual void UpdateController()
-        {
-            UpdateController(false);
-        }
-
-        private void UpdateController(bool transformUpdate)
-        {
-            if (!Enabled) { return; }
-
-            if (Interactions == null)
-            {
-                Debug.LogError($"No interaction configuration for Windows Mixed Reality Motion Controller {ControllerHandedness}");
-                Enabled = false;
-            }
-
-            foreach (var interaction in Interactions)
-            {
-                if (transformUpdate && interaction.InputType == DeviceInputType.SpatialPointer)
-                {
-                    interaction.ControllerAction?.Invoke(interaction);
-                }
-            }
-        }
-
         /// <summary>
         /// Update the "Controller" input from the device
         /// </summary>
@@ -180,14 +144,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 // We can now check for position and rotation.
                 IsPositionAvailable = interactionSourceState.sourcePose.TryGetPosition(out currentControllerPosition);
 
-                if (IsPositionAvailable)
-                {
-                    IsPositionApproximate = (interactionSourceState.sourcePose.positionAccuracy == InteractionSourcePositionAccuracy.Approximate);
-                }
-                else
-                {
-                    IsPositionApproximate = false;
-                }
+                IsPositionApproximate = IsPositionAvailable && interactionSourceState.sourcePose.positionAccuracy == InteractionSourcePositionAccuracy.Approximate;
 
                 IsRotationAvailable = interactionSourceState.sourcePose.TryGetRotation(out currentControllerRotation);
 

@@ -60,49 +60,6 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             return positionalIndices.ToArray();
         }
 
-        public virtual void UpdateTransform()
-        {
-            if (!Enabled) { return; }
-
-            if (Interactions == null)
-            {
-                Debug.LogError($"No interaction configuration for {GetType().Name}");
-                Enabled = false;
-                return;
-            }
-
-            foreach(var interaction in Interactions)
-            {
-                if (interaction.AxisType == AxisType.SixDof)
-                {
-                    interaction.ControllerAction?.Invoke(interaction);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update the controller data from Unity's Input Manager
-        /// </summary>
-        public virtual void UpdateController()
-        {
-            if (!Enabled) { return; }
-
-            if (Interactions == null)
-            {
-                Debug.LogError($"No interaction configuration for {GetType().Name}");
-                Enabled = false;
-                return;
-            }
-
-            foreach (var interaction in Interactions)
-            {
-                if (interaction.AxisType != AxisType.SixDof)
-                {
-                    interaction.ControllerAction?.Invoke(interaction);
-                }
-            }
-        }
-
         /// <summary>
         /// Update an Interaction Bool data type from a Bool input 
         /// </summary>
