@@ -152,7 +152,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// </summary>
         private void StartTouch()
         {
-            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], InputInteractions[0].MixedRealityInputAction);
             isTouched = true;
             MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, holdingAction);
             isHolding = true;
@@ -193,7 +193,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                         isManipulating = false;
                     }
 
-                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction, TouchData.tapCount);
+                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], InputInteractions[0].MixedRealityInputAction, TouchData.tapCount);
                 }
 
                 if (isHolding)
@@ -225,12 +225,12 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             Debug.Assert(!isManipulating);
 
-            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], InputInteractions[0].MixedRealityInputAction);
 
             Lifetime = 0.0f;
             isTouched = false;
 
-            foreach (var interaction in Interactions)
+            foreach (var interaction in InputInteractions)
             {
                 switch (interaction.AxisType)
                 {

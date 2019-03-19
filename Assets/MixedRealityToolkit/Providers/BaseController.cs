@@ -78,10 +78,10 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         public bool IsRotationAvailable { get; protected set; }
 
         /// <inheritdoc />
-        protected MixedRealityInteractionMapping[] Interactions { get; set; } = null;
+        protected MixedRealityInteractionMapping[] InputInteractions { get; set; } = null;
 
         /// <inheritdoc />
-        protected MixedRealityInteractionMapping[] PositionalInteractions { get; set; } = null;
+        protected MixedRealityInteractionMapping[] SpatialInteractions { get; set; } = null;
 
         #endregion IMixedRealityController Implementation
 
@@ -124,12 +124,12 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
                 }
 
                 // If no controller mappings found, warn the user.  Does not stop the project from running.
-                if (Interactions == null || Interactions.Length < 1)
+                if (InputInteractions == null || InputInteractions.Length < 1)
                 {
                     SetupDefaultInteractions(ControllerHandedness);
 
                     // We still don't have controller mappings, so this may be a custom controller. 
-                    if (Interactions == null || Interactions.Length < 1)
+                    if (InputInteractions == null || InputInteractions.Length < 1)
                     {
                         Debug.LogWarning($"No Controller interaction mappings found for {controllerType}.");
                         return false;
@@ -182,21 +182,21 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
 
             if (positionIndices == null || positionIndices.Length == 0)
             {
-                Interactions = mappings;
+                InputInteractions = mappings;
                 return;
             }
 
             Array.Sort(positionIndices);
 
             var inputInteractions = new MixedRealityInteractionMapping[mappings.Length - positionIndices.Length];
-            var positionalInteractions = new MixedRealityInteractionMapping[positionIndices.Length];
+            var spatialInteractions = new MixedRealityInteractionMapping[positionIndices.Length];
 
             int positionalIndex = 0;
             for (int i = 0; i < mappings.Length; i++)
             {
                 if (positionalIndex < positionIndices.Length && positionIndices[positionalIndex] == i)
                 {
-                    positionalInteractions[positionalIndex] = mappings[i];
+                    spatialInteractions[positionalIndex] = mappings[i];
                     positionalIndex++;
                 }
                 else
@@ -205,8 +205,8 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
                 }
             }
 
-            Interactions = inputInteractions;
-            PositionalInteractions = positionalInteractions;
+            InputInteractions = inputInteractions;
+            SpatialInteractions = spatialInteractions;
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         {
             if (!Enabled) { return; }
 
-            if (Interactions == null)
+            if (InputInteractions == null)
             {
                 Debug.LogError($"No interaction configuration for Windows Mixed Reality Motion Controller {ControllerHandedness}");
                 Enabled = false;
@@ -242,15 +242,15 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             MixedRealityInteractionMapping[] interactions;
             if (transformUpdate)
             {
-                if (PositionalInteractions == null)
+                if (SpatialInteractions == null)
                 {
                     return;
                 }
-                interactions = PositionalInteractions;
+                interactions = SpatialInteractions;
             }
             else
             {
-                interactions = Interactions;
+                interactions = InputInteractions;
             }
 
             foreach (var interaction in interactions)
