@@ -187,7 +187,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Definitions.Devices
 
         /// <summary>
         /// 
-        /// Script Method to be raised to the Input Manager when the input data has changed.
+        /// Script Method to be raised when the input data has changed.
         /// </summary>
         public Action<MixedRealityInteractionMapping> ControllerAction { get; set; }
 
