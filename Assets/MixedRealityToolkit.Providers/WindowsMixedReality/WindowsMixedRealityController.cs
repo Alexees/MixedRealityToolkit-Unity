@@ -40,7 +40,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// The Windows Mixed Reality Controller default interactions.
         /// </summary>
         /// <remarks>A single interaction mapping works for both left and right controllers.</remarks>
-        public override MixedRealityInteractionMapping[] DefaultInteractions => new[]
+        public override MixedRealityInteractionMapping[] DefaultInteractions { get; } = new[]
         {
             new MixedRealityInteractionMapping(0, "Spatial Pointer", AxisType.SixDof, DeviceInputType.SpatialPointer, MixedRealityInputAction.None),
             new MixedRealityInteractionMapping(1, "Spatial Grip", AxisType.SixDof, DeviceInputType.SpatialGrip, MixedRealityInputAction.None),

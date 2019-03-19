@@ -30,7 +30,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             : base(trackingState, controllerHandedness, inputSource, interactions) { }
 
         /// <inheritdoc />
-        public override MixedRealityInteractionMapping[] DefaultInteractions => new[]
+        public override MixedRealityInteractionMapping[] DefaultInteractions { get; } = new[]
         {
             new MixedRealityInteractionMapping(0, "Spatial Mouse Position", AxisType.SixDof, DeviceInputType.SpatialPointer, MixedRealityInputAction.None),
             new MixedRealityInteractionMapping(1, "Mouse Delta Position", AxisType.DualAxis, DeviceInputType.PointerPosition, MixedRealityInputAction.None),
