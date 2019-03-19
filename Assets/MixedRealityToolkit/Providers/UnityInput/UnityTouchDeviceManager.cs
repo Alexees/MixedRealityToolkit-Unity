@@ -37,7 +37,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         public override void PreServiceUpdate()
         {
-            UpdateTouchController((controller, touch) =>
+            UpdateTouchControllers((controller, touch) =>
             {
                 controller.UpdateControllerData(touch);
                 controller.UpdateTransform();
@@ -47,26 +47,16 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// <inheritdoc />
         public override void Update()
         {
-            for (var i = 0; i < Input.touches.Length; i++)
+            UpdateTouchControllers((controller, touch) =>
             {
-                Touch touch = Input.touches[i];
-
-                switch (touch.phase)
+                controller.UpdateController();
+                if (touch.phase == TouchPhase.Canceled ||
+                    touch.phase == TouchPhase.Ended)
                 {
-                    case TouchPhase.Began:
-                        UpdateTouchController((controller, touch) => controller.StartTouch());
-                        break;
-                    case TouchPhase.Ended:
-                    case TouchPhase.Canceled:
-                        UpdateTouchController((controller, touch) => RemoveTouchController(controller));
-                        break;
+                    MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller);
+                    ActiveTouches.Remove(touch.fingerId);
                 }
-            }
-
-            foreach (var controller in ActiveTouches)
-            {
-                controller.Value?.UpdateController();
-            }
+            }, false);
         }
 
         /// <inheritdoc />
@@ -90,9 +80,6 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
         private UnityTouchController GetController(Touch touch, bool addController = true)
         {
-            // Construct a ray from the current touch coordinates
-            Ray ray = CameraCache.Main.ScreenPointToRay(touch.position);
-
             UnityTouchController controller;
 
             if (!ActiveTouches.TryGetValue(touch.fingerId, out controller))
@@ -109,13 +96,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
                 if (inputSource != null)
                 {
-                    for (int i = 0; i < inputSource.Pointers.Length; i++)
-                    {
-                        inputSource.Pointers[i].Controller = controller;
-                        var touchPointer = (IMixedRealityTouchPointer)inputSource.Pointers[i];
-                        touchPointer.TouchRay = ray;
-                        touchPointer.FingerId = touch.fingerId;
-                    }
+                    inputSource.Pointers[0].Controller = controller;
                 }
 
                 if (!controller.SetupConfiguration(typeof(UnityTouchController)))
@@ -131,13 +112,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             return controller;
         }
 
-        private void RemoveTouchController(UnityTouchController controller)
-        {
-            controller.EndTouch();
-            MixedRealityToolkit.InputSystem?.RaiseSourceLost(controller.InputSource, controller);
-        }
-
-        private void UpdateTouchController(Action<UnityTouchController, Touch> controllerAction, bool updateCurrentReading = true)
+        private void UpdateTouchControllers(Action<UnityTouchController, Touch> controllerAction, bool updateCurrentReading = true)
         {
             if (updateCurrentReading)
             {

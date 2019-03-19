@@ -33,7 +33,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// <summary>
         /// Default interactions for Xbox Controller using Unity Input System.
         /// </summary>
-        public override MixedRealityInteractionMapping[] DefaultInteractions => new MixedRealityInteractionMapping[]
+        public override MixedRealityInteractionMapping[] DefaultInteractions => new []
         {
             new MixedRealityInteractionMapping(0, "Left Thumbstick", AxisType.DualAxis, DeviceInputType.ThumbStick, ControllerMappingLibrary.AXIS_1, ControllerMappingLibrary.AXIS_2, false, true),
             new MixedRealityInteractionMapping(1, "Left Thumbstick Click", AxisType.Digital, DeviceInputType.ButtonPress, KeyCode.JoystickButton8),

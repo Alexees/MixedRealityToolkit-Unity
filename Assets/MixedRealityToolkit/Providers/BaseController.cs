@@ -147,10 +147,10 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         }
 
         /// <summary>
-        /// Assign the default interactions based on controller handedness if necessary. 
+        /// Assign the default interactions based on controller handedness if necessary.  DefaultInteractions take precedense
         /// </summary>
         /// <param name="controllerHandedness"></param>
-        private void SetupDefaultInteractions(Handedness controllerHandedness)
+        protected virtual void SetupDefaultInteractions(Handedness controllerHandedness)
         {
             MixedRealityInteractionMapping[] mappings;
 
@@ -170,6 +170,10 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             AssignInteractions(mappings);
         }
 
+        /// <summary>
+        /// Splits mappings up into spatial and regular interactions if necessary
+        /// </summary>
+        /// <param name="mappings"></param>
         private void AssignInteractions(MixedRealityInteractionMapping[] mappings)
         {
             if (mappings == null) { return; }
@@ -190,7 +194,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             int positionalIndex = 0;
             for (int i = 0; i < mappings.Length; i++)
             {
-                if (positionIndices[positionalIndex] == i)
+                if (positionalIndex < positionIndices.Length && positionIndices[positionalIndex] == i)
                 {
                     positionalInteractions[positionalIndex] = mappings[i];
                     positionalIndex++;

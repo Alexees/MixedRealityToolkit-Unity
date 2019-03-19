@@ -280,7 +280,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             LastInteractionManagerStateReading = interactionmanagerStates;
         }
 
-        private void UpdateControllers(Action<WindowsMixedRealityController, InteractionSourceState> controllerAction, bool updateCurrentReading = true, bool addController = false)
+        private void UpdateControllers(Action<WindowsMixedRealityController, InteractionSourceState> controllerAction, bool updateCurrentReading = true)
         {
             if (updateCurrentReading)
             {
@@ -289,7 +289,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
             for (var i = 0; i < interactionmanagerStates?.Length; i++)
             {
-                var controller = GetController(interactionmanagerStates[i].source, addController);
+                var controller = GetController(interactionmanagerStates[i].source);
 
                 if (controller != null)
                 {
@@ -385,7 +385,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// <param name="interactionSource">Source State provided by the SDK</param>
         /// <param name="addController">Should the Source be added as a controller if it isn't found?</param>
         /// <returns>New or Existing Controller Input Source</returns>
-        private WindowsMixedRealityController GetController(InteractionSource interactionSource, bool addController = true)
+        private WindowsMixedRealityController GetController(InteractionSource interactionSource)
         {
             //If a device is already registered with the ID provided, just return it.
             if (activeControllers.ContainsKey(interactionSource.id))
@@ -394,8 +394,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 Debug.Assert(controller != null);
                 return controller;
             }
-
-            if (!addController) { return null; }
 
             Handedness controllingHand = interactionSource.MixedRealityHandedness();
 
@@ -457,7 +455,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 controller.UpdateControllerData(sourceState);
                 controller.UpdateTransform();
                 controller.UpdateController();
-            }, false, true);
+            }, true);
         }
 
         /// <summary>
@@ -534,7 +532,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         private void RaiseInputSystemEvent(InteractionSource source, Action<WindowsMixedRealityController> raiseInputEvent)
         {
-            var controller = GetController(source, false);
+            var controller = GetController(source);
             if (controller != null)
             {
                 raiseInputEvent(controller);

@@ -94,18 +94,8 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             TouchData = touch;
             var pointer = (IMixedRealityTouchPointer)InputSource.Pointers[0];
+            pointer.FingerId = touch.fingerId;
             ScreenPointRay = pointer.TouchRay = CameraCache.Main.ScreenPointToRay(touch.position);
-        }
-
-        /// <summary>
-        /// Start the touch.
-        /// </summary>
-        public void StartTouch()
-        {
-            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
-            isTouched = true;
-            MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, holdingAction);
-            isHolding = true;
         }
 
         protected override void UpdateController(bool transformUpdate)
@@ -118,19 +108,27 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             }
             else
             {
-                UpdateTouchInput();
+                switch (TouchData.phase)
+                {
+                    case TouchPhase.Moved:
+                        Move();
+                        break;
+                    case TouchPhase.Began:
+                        StartTouch();
+                        break;
+                    case TouchPhase.Ended:
+                    case TouchPhase.Canceled:
+                        EndTouch();
+                        break;
+                }
             }
         }
 
         /// <summary>
         /// Update the touch data.
         /// </summary>
-        private void UpdateTouchInput()
+        private void Move()
         {
-            if (!isTouched) { return; }
-
-            if (TouchData.phase != TouchPhase.Moved) { return; }
-
             if (!isManipulating)
             {
                 if (Mathf.Abs(TouchData.deltaPosition.x) > ManipulationThreshold ||
@@ -150,9 +148,20 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         }
 
         /// <summary>
+        /// Start the touch.
+        /// </summary>
+        private void StartTouch()
+        {
+            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], Interactions[0].MixedRealityInputAction);
+            isTouched = true;
+            MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, holdingAction);
+            isHolding = true;
+        }
+
+        /// <summary>
         /// End the touch.
         /// </summary>
-        public void EndTouch()
+        private void EndTouch()
         {
             if (TouchData.phase == TouchPhase.Ended)
             {
