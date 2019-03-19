@@ -215,7 +215,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         /// <param name="mapping"></param>
         protected abstract int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings);
 
-        public virtual void UpdateTransform()
+        public virtual void UpdateControllerTransform()
         {
             UpdateController(true);
         }
@@ -224,7 +224,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         /// Update the controller data from the provided platform state
         /// </summary>
         /// <param name="interactionSourceState">The InteractionSourceState retrieved from the platform</param>
-        public virtual void UpdateController()
+        public virtual void UpdateControllerInteractions()
         {
             UpdateController(false);
         }

@@ -46,13 +46,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                 RefreshDevices();
             }
 
-            UpdateControllers(controller => controller.UpdateTransform());
+            UpdateControllers(controller => controller.UpdateControllerTransform());
         }
 
         /// <inheritdoc />
         public override void Update()
         {
-            UpdateControllers(controller => controller.UpdateController());
+            UpdateControllers(controller => controller.UpdateControllerInteractions());
         }
 
         /// <inheritdoc />

@@ -253,7 +253,14 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             // NOTE: We update the source state data, in case an app wants to query it on source detected.
             foreach(var reading in interactionmanagerStates)
             {
-                InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs(reading));
+                var controller = GetController(interactionmanagerStates[i].source);
+
+                if (controller != null)
+                {
+                    controller.UpdateControllerTransform(interactionmanagerStates[i]);
+                    controller.UpdateControllerInteractions(interactionmanagerStates[i]);
+                    MixedRealityToolkit.InputSystem?.RaiseSourceDetected(controller.InputSource, controller);
+                }
             }
 
 #endif
@@ -293,7 +300,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
                 if (controller != null)
                 {
-                    controllerAction(controller, interactionmanagerStates[i]);
+                    controller.UpdateControllerInteractions(interactionmanagerStates[i]);
                 }
             }
         }
@@ -454,7 +461,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             {
                 controller.UpdateControllerData(sourceState);
                 controller.UpdateTransform();
-                controller.UpdateController();
+                controller.UpdateControllerInteractions();
             }, true);
         }
 

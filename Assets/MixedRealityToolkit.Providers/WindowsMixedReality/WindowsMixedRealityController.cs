@@ -68,8 +68,32 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 switch (mappings[i].InputType)
                 {
                     case DeviceInputType.SpatialPointer:
-                        mappings[i].ControllerAction = UpdatePointerData;
-                        positionalIndices.Add(i);
+                        UpdatePointerData(interactionSourceState, Interactions[i]);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update the controller data from the provided platform state
+        /// </summary>
+        /// <param name="interactionSourceState">The InteractionSourceState retrieved from the platform</param>
+        public void UpdateController(InteractionSourceState interactionSourceState)
+        {
+            if (!Enabled) { return; }
+
+            if (Interactions == null)
+            {
+                Debug.LogError($"No interaction configuration for Windows Mixed Reality Motion Controller {ControllerHandedness}");
+                Enabled = false;
+            }
+
+            for (int i = 0; i < Interactions?.Length; i++)
+            {
+                switch (Interactions[i].InputType)
+                {
+                    case DeviceInputType.None:
+                    case DeviceInputType.SpatialPointer:
                         break;
                     case DeviceInputType.Select:
                     case DeviceInputType.Trigger:

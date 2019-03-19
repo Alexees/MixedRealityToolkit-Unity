@@ -40,7 +40,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             UpdateTouchControllers((controller, touch) =>
             {
                 controller.UpdateControllerData(touch);
-                controller.UpdateTransform();
+                controller.UpdateControllerTransform();
             });
         }
 
@@ -49,7 +49,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             UpdateTouchControllers((controller, touch) =>
             {
-                controller.UpdateController();
+                controller.UpdateControllerInteractions();
                 if (touch.phase == TouchPhase.Canceled ||
                     touch.phase == TouchPhase.Ended)
                 {
