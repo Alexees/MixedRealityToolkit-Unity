@@ -16,6 +16,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
     /// </summary>
     public abstract class BaseController : IMixedRealityController
     {
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -28,8 +29,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             TrackingState = trackingState;
             ControllerHandedness = controllerHandedness;
             InputSource = inputSource;
-            Interactions = interactions;
-
+            AssignInteractions(interactions);
             IsPositionAvailable = false;
             IsPositionApproximate = false;
             IsRotationAvailable = false;
@@ -78,10 +78,10 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         public bool IsRotationAvailable { get; protected set; }
 
         /// <inheritdoc />
-        public MixedRealityInteractionMapping[] Interactions { get; set; } = null;
+        protected MixedRealityInteractionMapping[] Interactions { get; set; } = null;
 
         /// <inheritdoc />
-        public MixedRealityInteractionMapping[] PositionalInteractions { get; private set; } = null;
+        protected MixedRealityInteractionMapping[] PositionalInteractions { get; set; } = null;
 
         #endregion IMixedRealityController Implementation
 
@@ -117,7 +117,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
                         if (controllerMappings[i].Handedness == ControllerHandedness &&
                             controllerMappings[i].Interactions.Length > 0)
                         {
-                            Interactions = controllerMappings[i].Interactions;
+                            AssignInteractions(controllerMappings[i].Interactions);
                             break;
                         }
                     }
@@ -160,22 +160,56 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
                     mappings =  DefaultInteractions ?? DefaultLeftHandedInteractions;
                     break;
                 case Handedness.Right:
-                    mappings = DefaultRightHandedInteractions ?? DefaultInteractions;
+                    mappings = DefaultInteractions ?? DefaultRightHandedInteractions;
                     break;
                 default:
                     mappings = DefaultInteractions;
                     break;
             }
 
-            SetupControllerActions(mappings);
-            Interactions = mappings;
+            AssignInteractions(mappings);
+        }
+
+        private void AssignInteractions(MixedRealityInteractionMapping[] mappings)
+        {
+            if (mappings == null) { return; }
+
+            var positionIndices = SetupControllerActions(mappings);
+
+            if (positionIndices == null || positionIndices.Length == 0)
+            {
+                Interactions = mappings;
+                return;
+            }
+
+            Array.Sort(positionIndices);
+
+            var inputInteractions = new MixedRealityInteractionMapping[mappings.Length - positionIndices.Length];
+            var positionalInteractions = new MixedRealityInteractionMapping[positionIndices.Length];
+
+            int positionalIndex = 0;
+            for (int i = 0; i < mappings.Length; i++)
+            {
+                if (positionIndices[positionalIndex] == i)
+                {
+                    positionalInteractions[positionalIndex] = mappings[i];
+                    positionalIndex++;
+                }
+                else
+                {
+                    inputInteractions[i - positionalIndex] = mappings[i];
+                }
+            }
+
+            Interactions = inputInteractions;
+            PositionalInteractions = positionalInteractions;
         }
 
         /// <summary>
         /// Assign actions from script associated with each mapping.
         /// </summary>
         /// <param name="mapping"></param>
-        protected abstract void SetupControllerActions(MixedRealityInteractionMapping[] mappings);
+        protected abstract int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings);
 
         private void TryRenderControllerModel(Type controllerType)
         {

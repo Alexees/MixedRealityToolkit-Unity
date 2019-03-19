@@ -63,7 +63,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         private MixedRealityPose lastPose = MixedRealityPose.ZeroIdentity;
 
         /// <inheritdoc />
-        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
+        protected override int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
             var activeProfiles = MixedRealityToolkit.Instance.ActiveProfile;
 
@@ -85,6 +85,8 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                     }
                 }
             }
+
+            return null;
         }
 
         public void UpdateControllerData(Touch touch, Ray ray)

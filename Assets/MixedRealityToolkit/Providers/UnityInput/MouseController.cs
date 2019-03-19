@@ -51,24 +51,29 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             Input.mousePosition.x <= Screen.width ||
             Input.mousePosition.y <= Screen.height;
 
-        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
+        protected override int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            foreach (var mapping in mappings)
+            List<int> positionalIndices = new List<int>();
+
+            for (int i = 0; i < mappings.Length; i++)
             {
-                switch (mapping.InputType)
+                switch (mappings[i].InputType)
                 {
                     case DeviceInputType.SpatialPointer:
                     case DeviceInputType.PointerPosition:
-                        mapping.ControllerAction = UpdateMousePosition;
+                        mappings[i].ControllerAction = UpdateMousePosition;
+                        positionalIndices.Add(i);
                         break;
                     case DeviceInputType.Scroll:
-                        mapping.ControllerAction = UpdateScrollPositon;
+                        mappings[i].ControllerAction = UpdateScrollPositon;
                         break;
                     case DeviceInputType.ButtonPress:
-                        mapping.ControllerAction = UpdateButton;
+                        mappings[i].ControllerAction = UpdateButton;
                         break;
                 }
             }
+
+            return positionalIndices.ToArray();
         }
 
         public void UpdateTransform()

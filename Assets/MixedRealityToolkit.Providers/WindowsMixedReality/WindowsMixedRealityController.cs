@@ -8,6 +8,7 @@ using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Providers;
 using Microsoft.MixedReality.Toolkit.Core.Services;
+using System.Collections.Generic;
 
 #if UNITY_WSA
 using UnityEngine;
@@ -58,45 +59,50 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         };
 
 #if !UNITY_WSA
-        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings) { }
+        protected override int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings) { return null; }
 #else
-        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
+        protected override int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            foreach (var mapping in mappings)
+            List<int> positionalIndices = new List<int>();
+
+            for (int i = 0; i < mappings.Length; i++)
             {
-                switch (mapping.InputType)
+                switch (mappings[i].InputType)
                 {
                     case DeviceInputType.None:
                     case DeviceInputType.SpatialPointer:
-                        mapping.ControllerAction = UpdatePointerData;
+                        mappings[i].ControllerAction = UpdatePointerData;
+                        positionalIndices.Add(i);
                         break;
                     case DeviceInputType.Select:
                     case DeviceInputType.Trigger:
                     case DeviceInputType.TriggerTouch:
                     case DeviceInputType.TriggerPress:
-                        mapping.ControllerAction = UpdateTriggerData;
+                        mappings[i].ControllerAction = UpdateTriggerData;
                     break;
                     case DeviceInputType.SpatialGrip:
-                        mapping.ControllerAction = UpdateGripData;
+                        mappings[i].ControllerAction = UpdateGripData;
                     break;
                     case DeviceInputType.ThumbStick:
                     case DeviceInputType.ThumbStickPress:
-                        mapping.ControllerAction = UpdateThumbStickData;
+                        mappings[i].ControllerAction = UpdateThumbStickData;
                     break;
                     case DeviceInputType.Touchpad:
                     case DeviceInputType.TouchpadTouch:
                     case DeviceInputType.TouchpadPress:
-                        mapping.ControllerAction = UpdateTouchPadData;
+                        mappings[i].ControllerAction = UpdateTouchPadData;
                     break;
                     case DeviceInputType.Menu:
-                        mapping.ControllerAction = UpdateMenuData;
+                        mappings[i].ControllerAction = UpdateMenuData;
                     break;
                     default:
-                        Debug.LogError($"Input [{mapping.InputType}] is not handled for this controller [WindowsMixedRealityController]");
+                        Debug.LogError($"Input [{mappings[i].InputType}] is not handled for this controller [WindowsMixedRealityController]");
                         Enabled = false;
                     break;
                 }
             }
+
+            return positionalIndices.ToArray();
         }
 
         /// <summary>

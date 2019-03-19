@@ -6,6 +6,7 @@ using Microsoft.MixedReality.Toolkit.Core.Definitions.Devices;
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Services;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
@@ -31,27 +32,32 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         protected MixedRealityPose LastControllerPose = MixedRealityPose.ZeroIdentity;
         protected MixedRealityPose CurrentControllerPose = MixedRealityPose.ZeroIdentity;
 
-        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
+        protected override int[] SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            foreach (var mapping in mappings)
+            List<int> positionalIndices = new List<int>();
+
+            for (int i = 0; i < mappings.Length; i++)
             {
-                switch (mapping.AxisType)
+                switch (mappings[i].AxisType)
                 {
                     case AxisType.None:
                     case AxisType.SixDof:
-                        mapping.ControllerAction = UpdatePoseData;
+                        mappings[i].ControllerAction = UpdatePoseData;
+                        positionalIndices.Add(i);
                         break;
                     case AxisType.Digital:
-                        mapping.ControllerAction = UpdateButtonData;
+                        mappings[i].ControllerAction = UpdateButtonData;
                         break;
                     case AxisType.SingleAxis:
-                        mapping.ControllerAction = UpdateSingleAxisData;
+                        mappings[i].ControllerAction = UpdateSingleAxisData;
                         break;
                     case AxisType.DualAxis:
-                        mapping.ControllerAction = UpdateDualAxisData;
+                        mappings[i].ControllerAction = UpdateDualAxisData;
                         break;
                 }
             }
+
+            return positionalIndices.ToArray();
         }
 
         public virtual void UpdateTransform()
