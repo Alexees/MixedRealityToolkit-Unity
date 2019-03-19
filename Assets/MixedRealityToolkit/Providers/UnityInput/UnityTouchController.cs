@@ -7,8 +7,6 @@ using Microsoft.MixedReality.Toolkit.Core.Definitions.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Services;
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
@@ -19,9 +17,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
     public class UnityTouchController : BaseController
     {
         public UnityTouchController(TrackingState trackingState, Handedness controllerHandedness, IMixedRealityInputSource inputSource = null, MixedRealityInteractionMapping[] interactions = null)
-                : base(trackingState, controllerHandedness, inputSource, interactions)
-        {
-        }
+                : base(trackingState, controllerHandedness, inputSource, interactions) { }
 
         private const float K_CONTACT_EPSILON = 30.0f;
 
@@ -51,13 +47,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         public float Lifetime { get; private set; } = 0.0f;
 
         /// <inheritdoc />
-        public override Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> DefaultInteractions => new Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>>()
+        public override MixedRealityInteractionMapping[] DefaultInteractions => new []
         {
-            { new MixedRealityInteractionMapping(0, "Touch Pointer Delta", AxisType.DualAxis, DeviceInputType.PointerPosition, MixedRealityInputAction.None), PositionChanged },
-            { new MixedRealityInteractionMapping(1, "Touch Pointer Position", AxisType.SixDof, DeviceInputType.SpatialPointer, MixedRealityInputAction.None), PoseChanged },
+            new MixedRealityInteractionMapping(0, "Touch Pointer Delta", AxisType.DualAxis, DeviceInputType.PointerPosition, MixedRealityInputAction.None),
+            new MixedRealityInteractionMapping(1, "Touch Pointer Position", AxisType.SixDof, DeviceInputType.SpatialPointer, MixedRealityInputAction.None),
         };
 
-        private KeyValuePair<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> pointerDownInteraction => new KeyValuePair<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>>(new MixedRealityInteractionMapping(2, "Touch Press", AxisType.Digital, DeviceInputType.PointerClick, MixedRealityInputAction.None), null);
+        private MixedRealityInteractionMapping pointerDownInteraction => new MixedRealityInteractionMapping(2, "Touch Press", AxisType.Digital, DeviceInputType.PointerClick, MixedRealityInputAction.None);
 
         private bool isTouched;
         private MixedRealityInputAction holdingAction;
@@ -67,10 +63,8 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         private MixedRealityPose lastPose = MixedRealityPose.ZeroIdentity;
 
         /// <inheritdoc />
-        public override void SetupDefaultInteractions(Handedness controllerHandedness)
+        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            AssignControllerMappings(DefaultInteractions);
-
             var activeProfiles = MixedRealityToolkit.Instance.ActiveProfile;
 
             if (activeProfiles.IsInputSystemEnabled &&
@@ -105,7 +99,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         /// </summary>
         public void StartTouch()
         {
-            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], pointerDownInteraction.Key.MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerDown(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction);
             isTouched = true;
             MixedRealityToolkit.InputSystem?.RaiseGestureStarted(this, holdingAction);
             isHolding = true;
@@ -121,7 +115,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             foreach(var interaction in Interactions)
             {
-                interaction.Value(interaction.Key);
+                interaction.ControllerAction?.Invoke(interaction);
             }
         }
 
@@ -187,7 +181,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                         isManipulating = false;
                     }
 
-                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], pointerDownInteraction.Key.MixedRealityInputAction, TouchData.tapCount);
+                    MixedRealityToolkit.InputSystem?.RaisePointerClicked(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction, TouchData.tapCount);
                 }
 
                 if (isHolding)
@@ -219,20 +213,20 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             Debug.Assert(!isManipulating);
 
-            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], pointerDownInteraction.Key.MixedRealityInputAction);
+            MixedRealityToolkit.InputSystem?.RaisePointerUp(InputSource.Pointers[0], pointerDownInteraction.MixedRealityInputAction);
 
             Lifetime = 0.0f;
             isTouched = false;
 
             foreach (var interaction in Interactions)
             {
-                switch (interaction.Key.AxisType)
+                switch (interaction.AxisType)
                 {
                     case AxisType.DualAxis:
-                        interaction.Key.Vector2Data = Vector2.zero;
+                        interaction.Vector2Data = Vector2.zero;
                         break;
                     case AxisType.SixDof:
-                        interaction.Key.PoseData = MixedRealityPose.ZeroIdentity;
+                        interaction.PoseData = MixedRealityPose.ZeroIdentity;
                         break;
                 }
             }

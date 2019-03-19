@@ -17,9 +17,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
     public class GenericJoystickController : BaseController
     {
         public GenericJoystickController(TrackingState trackingState, Handedness controllerHandedness, IMixedRealityInputSource inputSource = null, MixedRealityInteractionMapping[] interactions = null)
-                : base(trackingState, controllerHandedness, inputSource, interactions)
-        {
-        }
+                : base(trackingState, controllerHandedness, inputSource, interactions) { }
 
         /// <summary>
         /// The pointer's offset angle.
@@ -33,10 +31,27 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         protected MixedRealityPose LastControllerPose = MixedRealityPose.ZeroIdentity;
         protected MixedRealityPose CurrentControllerPose = MixedRealityPose.ZeroIdentity;
 
-        /// <inheritdoc />
-        public override void SetupDefaultInteractions(Handedness controllerHandedness)
+        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            // Generic unity controller's will not have default interactions
+            foreach (var mapping in mappings)
+            {
+                switch (mapping.AxisType)
+                {
+                    case AxisType.None:
+                    case AxisType.SixDof:
+                        mapping.ControllerAction = UpdatePoseData;
+                        break;
+                    case AxisType.Digital:
+                        mapping.ControllerAction = UpdateButtonData;
+                        break;
+                    case AxisType.SingleAxis:
+                        mapping.ControllerAction = UpdateSingleAxisData;
+                        break;
+                    case AxisType.DualAxis:
+                        mapping.ControllerAction = UpdateDualAxisData;
+                        break;
+                }
+            }
         }
 
         public virtual void UpdateTransform()
@@ -50,11 +65,11 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                 return;
             }
 
-            for (int i = 0; i < Interactions?.Length; i++)
+            foreach(var interaction in Interactions)
             {
-                if (Interactions[i].AxisType == AxisType.SixDof)
+                if (interaction.AxisType == AxisType.SixDof)
                 {
-                    UpdatePoseData(Interactions[i]);
+                    interaction.ControllerAction?.Invoke(interaction);
                 }
             }
         }
@@ -66,25 +81,18 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
         {
             if (!Enabled) { return; }
 
-            for (int i = 0; i < Interactions?.Length; i++)
+            if (Interactions == null)
             {
-                switch (Interactions[i].AxisType)
+                Debug.LogError($"No interaction configuration for {GetType().Name}");
+                Enabled = false;
+                return;
+            }
+
+            foreach (var interaction in Interactions)
+            {
+                if (interaction.AxisType != AxisType.SixDof)
                 {
-                    case AxisType.None:
-                    case AxisType.SixDof:
-                        break;
-                    case AxisType.Digital:
-                        UpdateButtonData(Interactions[i]);
-                        break;
-                    case AxisType.SingleAxis:
-                        UpdateSingleAxisData(Interactions[i]);
-                        break;
-                    case AxisType.DualAxis:
-                        UpdateDualAxisData(Interactions[i]);
-                        break;
-                    default:
-                        Debug.LogError($"Input [{Interactions[i].InputType}] is not handled for this controller [{GetType().Name}]");
-                        break;
+                    interaction.ControllerAction?.Invoke(interaction);
                 }
             }
         }

@@ -3,8 +3,8 @@
 
 using Microsoft.MixedReality.Toolkit.Core.Definitions.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
-using System;
 using UnityEngine;
+using System;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Definitions.Devices
 {
@@ -118,6 +118,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Definitions.Devices
             axisType = mixedRealityInteractionMapping.axisType;
             inputType = mixedRealityInteractionMapping.inputType;
             inputAction = mixedRealityInteractionMapping.inputAction;
+            ControllerAction = mixedRealityInteractionMapping.ControllerAction;
             keyCode = mixedRealityInteractionMapping.keyCode;
             axisCodeX = mixedRealityInteractionMapping.axisCodeX;
             axisCodeY = mixedRealityInteractionMapping.axisCodeY;
@@ -183,6 +184,13 @@ namespace Microsoft.MixedReality.Toolkit.Core.Definitions.Devices
             get { return inputAction; }
             internal set { inputAction = value; }
         }
+
+        /// <summary>
+        /// 
+        /// Script Method to be raised to the Input Manager when the input data has changed.
+        /// </summary>
+        public Action<MixedRealityInteractionMapping> ControllerAction { get; set; }
+
 
         [SerializeField]
         [Tooltip("Optional KeyCode value to get input from Unity's old input system.")]

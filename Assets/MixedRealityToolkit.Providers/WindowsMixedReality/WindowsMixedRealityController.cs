@@ -57,19 +57,47 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
             new MixedRealityInteractionMapping(11, "Thumbstick Press", AxisType.Digital, DeviceInputType.ThumbStickPress, MixedRealityInputAction.None),
         };
 
-        /// <inheritdoc />
-        public override MixedRealityInteractionMapping[] DefaultLeftHandedInteractions => DefaultInteractions;
-
-        /// <inheritdoc />
-        public override MixedRealityInteractionMapping[] DefaultRightHandedInteractions => DefaultInteractions;
-
-        /// <inheritdoc />
-        public override void SetupDefaultInteractions(Handedness controllerHandedness)
+#if !UNITY_WSA
+        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings) { }
+#else
+        protected override void SetupControllerActions(MixedRealityInteractionMapping[] mappings)
         {
-            AssignControllerMappings(DefaultInteractions);
+            foreach (var mapping in mappings)
+            {
+                switch (mapping.InputType)
+                {
+                    case DeviceInputType.None:
+                    case DeviceInputType.SpatialPointer:
+                        mapping.ControllerAction = UpdatePointerData;
+                        break;
+                    case DeviceInputType.Select:
+                    case DeviceInputType.Trigger:
+                    case DeviceInputType.TriggerTouch:
+                    case DeviceInputType.TriggerPress:
+                        mapping.ControllerAction = UpdateTriggerData;
+                    break;
+                    case DeviceInputType.SpatialGrip:
+                        mapping.ControllerAction = UpdateGripData;
+                    break;
+                    case DeviceInputType.ThumbStick:
+                    case DeviceInputType.ThumbStickPress:
+                        mapping.ControllerAction = UpdateThumbStickData;
+                    break;
+                    case DeviceInputType.Touchpad:
+                    case DeviceInputType.TouchpadTouch:
+                    case DeviceInputType.TouchpadPress:
+                        mapping.ControllerAction = UpdateTouchPadData;
+                    break;
+                    case DeviceInputType.Menu:
+                        mapping.ControllerAction = UpdateMenuData;
+                    break;
+                    default:
+                        Debug.LogError($"Input [{mapping.InputType}] is not handled for this controller [WindowsMixedRealityController]");
+                        Enabled = false;
+                    break;
+                }
+            }
         }
-
-#if UNITY_WSA
 
         /// <summary>
         /// The last updated source state reading for this Windows Mixed Reality Controller.
@@ -93,23 +121,7 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
         public virtual void UpdateTransform()
         {
-            if (!Enabled) { return; }
-
-            if (Interactions == null)
-            {
-                Debug.LogError($"No interaction configuration for Windows Mixed Reality Motion Controller {ControllerHandedness}");
-                Enabled = false;
-            }
-
-            for (int i = 0; i < Interactions?.Length; i++)
-            {
-                switch (Interactions[i].InputType)
-                {
-                    case DeviceInputType.SpatialPointer:
-                        UpdatePointerData(Interactions[i]);
-                        break;
-                }
-            }
+            UpdateController(true);
         }
 
         /// <summary>
@@ -117,6 +129,11 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// </summary>
         /// <param name="interactionSourceState">The InteractionSourceState retrieved from the platform</param>
         public virtual void UpdateController()
+        {
+            UpdateController(false);
+        }
+
+        private void UpdateController(bool transformUpdate)
         {
             if (!Enabled) { return; }
 
@@ -126,38 +143,11 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
                 Enabled = false;
             }
 
-            for (int i = 0; i < Interactions?.Length; i++)
+            foreach (var interaction in Interactions)
             {
-                switch (Interactions[i].InputType)
+                if (transformUpdate && interaction.InputType == DeviceInputType.SpatialPointer)
                 {
-                    case DeviceInputType.None:
-                    case DeviceInputType.SpatialPointer:
-                        break;
-                    case DeviceInputType.Select:
-                    case DeviceInputType.Trigger:
-                    case DeviceInputType.TriggerTouch:
-                    case DeviceInputType.TriggerPress:
-                        UpdateTriggerData(Interactions[i]);
-                        break;
-                    case DeviceInputType.SpatialGrip:
-                        UpdateGripData(Interactions[i]);
-                        break;
-                    case DeviceInputType.ThumbStick:
-                    case DeviceInputType.ThumbStickPress:
-                        UpdateThumbStickData(Interactions[i]);
-                        break;
-                    case DeviceInputType.Touchpad:
-                    case DeviceInputType.TouchpadTouch:
-                    case DeviceInputType.TouchpadPress:
-                        UpdateTouchPadData(Interactions[i]);
-                        break;
-                    case DeviceInputType.Menu:
-                        UpdateMenuData(Interactions[i]);
-                        break;
-                    default:
-                        Debug.LogError($"Input [{Interactions[i].InputType}] is not handled for this controller [WindowsMixedRealityController]");
-                        Enabled = false;
-                        break;
+                    interaction.ControllerAction?.Invoke(interaction);
                 }
             }
         }

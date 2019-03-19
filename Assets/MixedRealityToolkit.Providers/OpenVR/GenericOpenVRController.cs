@@ -141,12 +141,6 @@ namespace Microsoft.MixedReality.Toolkit.Providers.OpenVR
         };
 
         /// <inheritdoc />
-        public override void SetupDefaultInteractions(Handedness controllerHandedness)
-        {
-            AssignControllerMappings(controllerHandedness == Handedness.Left ? DefaultLeftHandedInteractions : DefaultRightHandedInteractions);
-        }
-
-        /// <inheritdoc />
         public override void UpdateController()
         {
             if (!Enabled) { return; }

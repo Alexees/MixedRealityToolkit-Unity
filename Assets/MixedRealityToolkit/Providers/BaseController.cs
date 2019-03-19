@@ -6,9 +6,8 @@ using Microsoft.MixedReality.Toolkit.Core.Definitions.Utilities;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.Devices;
 using Microsoft.MixedReality.Toolkit.Core.Interfaces.InputSystem;
 using Microsoft.MixedReality.Toolkit.Core.Services;
-using System;
-using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace Microsoft.MixedReality.Toolkit.Core.Providers
 {
@@ -29,7 +28,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             TrackingState = trackingState;
             ControllerHandedness = controllerHandedness;
             InputSource = inputSource;
-            Interactions = CreateInteractionMapping(interactions);
+            Interactions = interactions;
 
             IsPositionAvailable = false;
             IsPositionApproximate = false;
@@ -41,17 +40,17 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         /// <summary>
         /// The default interactions for this controller.
         /// </summary>
-        public virtual Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> DefaultInteractions { get; } = null;
+        public virtual MixedRealityInteractionMapping[] DefaultInteractions { get; } = null;
 
         /// <summary>
         /// The Default Left Handed interactions for this controller.
         /// </summary>
-        public virtual Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> DefaultLeftHandedInteractions { get; } = null;
+        public virtual MixedRealityInteractionMapping[] DefaultLeftHandedInteractions { get; } = null;
 
         /// <summary>
         /// The Default Right Handed interactions for this controller.
         /// </summary>
-        public virtual Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> DefaultRightHandedInteractions { get; } = null;
+        public virtual MixedRealityInteractionMapping[] DefaultRightHandedInteractions { get; } = null;
 
         #region IMixedRealityController Implementation
 
@@ -79,10 +78,10 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
         public bool IsRotationAvailable { get; protected set; }
 
         /// <inheritdoc />
-        public Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> Interactions { get; private set; } = null;
+        public MixedRealityInteractionMapping[] Interactions { get; set; } = null;
 
         /// <inheritdoc />
-        public Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> PositionalInteractions { get; private set; } = null;
+        public MixedRealityInteractionMapping[] PositionalInteractions { get; private set; } = null;
 
         #endregion IMixedRealityController Implementation
 
@@ -118,19 +117,19 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
                         if (controllerMappings[i].Handedness == ControllerHandedness &&
                             controllerMappings[i].Interactions.Length > 0)
                         {
-                            AssignControllerMappings(CreateInteractionMapping(controllerMappings[i].Interactions));
+                            Interactions = controllerMappings[i].Interactions;
                             break;
                         }
                     }
                 }
 
                 // If no controller mappings found, warn the user.  Does not stop the project from running.
-                if (Interactions == null || Interactions.Count < 1)
+                if (Interactions == null || Interactions.Length < 1)
                 {
                     SetupDefaultInteractions(ControllerHandedness);
 
                     // We still don't have controller mappings, so this may be a custom controller. 
-                    if (Interactions == null || Interactions.Count < 1)
+                    if (Interactions == null || Interactions.Length < 1)
                     {
                         Debug.LogWarning($"No Controller interaction mappings found for {controllerType}.");
                         return false;
@@ -147,32 +146,36 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers
             return true;
         }
 
-        private static Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> CreateInteractionMapping(MixedRealityInteractionMapping[] interactions)
-        {
-            Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> newInteractions = new Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>>(interactions.Length);
-
-            for (int i = 0; i < interactions.Length; i++)
-            {
-                newInteractions.Add(new MixedRealityInteractionMapping(interactions[i]), null);
-            }
-
-            return newInteractions;
-        }
-
         /// <summary>
         /// Assign the default interactions based on controller handedness if necessary. 
         /// </summary>
         /// <param name="controllerHandedness"></param>
-        public abstract void SetupDefaultInteractions(Handedness controllerHandedness);
-
-        /// <summary>
-        /// Load the Interaction mappings for this controller from the configured Controller Mapping profile
-        /// </summary>
-        /// <param name="mappings">Configured mappings from a controller mapping profile</param>
-        public void AssignControllerMappings(Dictionary<MixedRealityInteractionMapping, Action<MixedRealityInteractionMapping>> mappings)
+        private void SetupDefaultInteractions(Handedness controllerHandedness)
         {
+            MixedRealityInteractionMapping[] mappings;
+
+            switch (controllerHandedness)
+            {
+                case Handedness.Left:
+                    mappings =  DefaultInteractions ?? DefaultLeftHandedInteractions;
+                    break;
+                case Handedness.Right:
+                    mappings = DefaultRightHandedInteractions ?? DefaultInteractions;
+                    break;
+                default:
+                    mappings = DefaultInteractions;
+                    break;
+            }
+
+            SetupControllerActions(mappings);
             Interactions = mappings;
         }
+
+        /// <summary>
+        /// Assign actions from script associated with each mapping.
+        /// </summary>
+        /// <param name="mapping"></param>
+        protected abstract void SetupControllerActions(MixedRealityInteractionMapping[] mappings);
 
         private void TryRenderControllerModel(Type controllerType)
         {
