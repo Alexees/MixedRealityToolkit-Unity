@@ -272,11 +272,15 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
 
             interactionmanagerStates = InteractionManager.GetCurrentReading();
 
+            // Avoids a Unity Editor bug detecting a controller from the previous run during the first frame
+#if !UNITY_EDITOR
+            // NOTE: We update the source state data, in case an app wants to query it on source detected.
             foreach(var reading in interactionmanagerStates)
             {
                 InteractionManager_InteractionSourceDetected(new InteractionSourceDetectedEventArgs(reading));
             }
 
+#endif
             GestureRecognizerEnabled =
                 activeProfile.IsInputSystemEnabled &&
                 gestureProfile != null &&
@@ -454,6 +458,15 @@ namespace Microsoft.MixedReality.Toolkit.Providers.WindowsMixedReality
         /// <param name="args">SDK source detected event arguments</param>
         private void InteractionManager_InteractionSourceDetected(InteractionSourceDetectedEventArgs args)
         {
+
+            // Avoids a Unity Editor bug detecting a controller from the previous run during the first frame
+#if UNITY_EDITOR
+            if (Time.frameCount <= 1)
+            {
+                return;
+            }
+#endif
+
             bool raiseSourceDetected = !activeControllers.ContainsKey(args.state.source.id);
 
             UpdateControllers((controller, sourceState) =>
