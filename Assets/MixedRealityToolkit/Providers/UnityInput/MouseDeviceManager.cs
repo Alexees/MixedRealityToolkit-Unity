@@ -14,7 +14,7 @@ using UnityEngine;
 namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 {
     [MixedRealityDataProvider(
-        typeof(Interfaces.InputSystem.IMixedRealityInputSystem),
+        typeof(IMixedRealityInputSystem),
         (SupportedPlatforms)(-1))]  // All platforms supported by Unity
     public class MouseDeviceManager : BaseDeviceManager, IMixedRealityExtensionService
     {

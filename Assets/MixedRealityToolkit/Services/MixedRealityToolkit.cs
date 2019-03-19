@@ -256,7 +256,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Services
         /// <inheritdoc />
         public bool RegisterDataProvider<T>(T dataProviderInstance) where T : IMixedRealityDataProvider
         {
-            return RegisterService<T>(dataProviderInstance);
+            return RegisterService(dataProviderInstance);
         }
 
         /// <inheritdoc />

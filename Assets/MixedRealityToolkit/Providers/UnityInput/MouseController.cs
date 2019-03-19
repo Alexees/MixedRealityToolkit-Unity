@@ -60,6 +60,9 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
                 switch (mappings[i].InputType)
                 {
                     case DeviceInputType.SpatialPointer:
+                        mappings[i].ControllerAction = UpdateSpatialPointer;
+                        positionalIndices.Add(i);
+                        break;
                     case DeviceInputType.PointerPosition:
                         mappings[i].ControllerAction = UpdateMousePosition;
                         positionalIndices.Add(i);
@@ -86,7 +89,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
             base.UpdateController(transformUpdate);
         }
 
-        private void UpdateMousePosition(MixedRealityInteractionMapping interaction)
+        private void UpdateSpatialPointer(MixedRealityInteractionMapping interaction)
         {
             MixedRealityPose controllerPose = MixedRealityPose.ZeroIdentity;
 
@@ -98,6 +101,15 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             interaction.PoseData = controllerPose;
 
+            if (interaction.Changed)
+            {
+                MixedRealityToolkit.InputSystem?.RaiseSourcePoseChanged(InputSource, this, interaction.PoseData);
+                MixedRealityToolkit.InputSystem?.RaisePoseInputChanged(InputSource, interaction.MixedRealityInputAction, interaction.PoseData);
+            }
+        }
+
+        private void UpdateMousePosition(MixedRealityInteractionMapping interaction)
+        {
             Vector2 mouseDelta;
 
             mouseDelta.x = -Input.GetAxis("Mouse Y");
@@ -107,9 +119,7 @@ namespace Microsoft.MixedReality.Toolkit.Core.Providers.UnityInput
 
             if (interaction.Changed)
             {
-                MixedRealityToolkit.InputSystem?.RaiseSourcePoseChanged(InputSource, this, interaction.PoseData);
                 MixedRealityToolkit.InputSystem?.RaiseSourcePositionChanged(InputSource, this, interaction.Vector2Data);
-                MixedRealityToolkit.InputSystem?.RaisePoseInputChanged(InputSource, interaction.MixedRealityInputAction, interaction.PoseData);
                 MixedRealityToolkit.InputSystem?.RaisePositionInputChanged(InputSource, interaction.MixedRealityInputAction, interaction.Vector2Data);
             }
         }
